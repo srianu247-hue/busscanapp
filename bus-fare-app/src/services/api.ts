@@ -1,0 +1,208 @@
+/**
+ * API Service for Bus Fingerprint Fare System
+ * Connects to existing backend APIs
+ */
+
+const API_BASE_URL = '/api';
+
+// ==========================================
+// TYPE DEFINITIONS
+// ==========================================
+
+export interface FingerprintVerifyResponse {
+    success: boolean;
+    userId: string;
+    fingerprintId: string;
+    verified: boolean;
+    message?: string;
+}
+
+export interface User {
+    _id: string;
+    name: string;
+    email: string;
+    phone: string;
+    walletBalance: number;
+    status: 'active' | 'blocked';
+    fingerprintId?: string;
+}
+
+export interface WalletDeductRequest {
+    amount: number;
+    tripId?: string;
+    description?: string;
+}
+
+export interface WalletDeductResponse {
+    success: boolean;
+    newBalance: number;
+    transactionId: string;
+    message?: string;
+}
+
+export interface TripData {
+    userId: string;
+    userName: string;
+    entryLocation: {
+        lat: number;
+        lng: number;
+    };
+    exitLocation: {
+        lat: number;
+        lng: number;
+    };
+    entryTime: string;
+    exitTime: string;
+    distanceKm: number;
+    fareAmount: number;
+    walletBalanceBefore: number;
+    walletBalanceAfter: number;
+}
+
+// ==========================================
+// API HELPER FUNCTION
+// ==========================================
+
+async function apiRequest<T>(
+    endpoint: string,
+    options: RequestInit = {}
+): Promise<T> {
+    const url = `${API_BASE_URL}${endpoint}`;
+
+    const defaultHeaders = {
+        'Content-Type': 'application/json',
+    };
+
+    const config: RequestInit = {
+        ...options,
+        headers: {
+            ...defaultHeaders,
+            ...options.headers,
+        },
+    };
+
+    try {
+        const response = await fetch(url, config);
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error(`API Error [${endpoint}]:`, error);
+        throw error;
+    }
+}
+
+// ==========================================
+// FINGERPRINT API
+// ==========================================
+
+/**
+ * Verify fingerprint and get user identification
+ * POST /api/fingerprint/verify
+ */
+export async function verifyFingerprint(): Promise<FingerprintVerifyResponse> {
+    return apiRequest<FingerprintVerifyResponse>('/fingerprint/verify', {
+        method: 'POST',
+        body: JSON.stringify({
+            action: 'verify',
+            timestamp: new Date().toISOString()
+        })
+    });
+}
+
+/**
+ * Capture fingerprint (for entry/exit scanning)
+ * POST /api/fingerprint/capture
+ */
+export async function captureFingerprint(): Promise<{ success: boolean; fingerprintData: string }> {
+    return apiRequest('/fingerprint/capture', {
+        method: 'POST',
+        body: JSON.stringify({
+            action: 'capture',
+            timestamp: new Date().toISOString()
+        })
+    });
+}
+
+// ==========================================
+// USER API
+// ==========================================
+
+/**
+ * Get user details by ID
+ * GET /api/users/:userId
+ */
+export async function getUserById(userId: string): Promise<User> {
+    return apiRequest<User>(`/users/${userId}`, {
+        method: 'GET'
+    });
+}
+
+/**
+ * Deduct amount from user wallet
+ * POST /api/users/:userId/deduct
+ */
+export async function deductWalletBalance(
+    userId: string,
+    deductData: WalletDeductRequest
+): Promise<WalletDeductResponse> {
+    return apiRequest<WalletDeductResponse>(`/users/${userId}/deduct`, {
+        method: 'POST',
+        body: JSON.stringify(deductData)
+    });
+}
+
+// ==========================================
+// TRIP API (Optional - if backend supports)
+// ==========================================
+
+/**
+ * Save trip data to backend
+ * POST /api/trips
+ */
+export async function saveTripData(tripData: TripData): Promise<{ success: boolean; tripId: string }> {
+    return apiRequest('/trips', {
+        method: 'POST',
+        body: JSON.stringify(tripData)
+    });
+}
+
+// ==========================================
+// SYSTEM STATUS CHECK
+// ==========================================
+
+/**
+ * Check backend connectivity
+ * GET /api/health or /api/status
+ */
+export async function checkBackendStatus(): Promise<{ online: boolean; message?: string }> {
+    try {
+        const response = await apiRequest<{ status: string }>('/health', {
+            method: 'GET'
+        });
+        return { online: true, message: response.status };
+    } catch (error) {
+        return { online: false, message: 'Backend offline' };
+    }
+}
+
+/**
+ * Check fingerprint scanner connectivity
+ * This would typically call a local RDMS service endpoint
+ */
+export async function checkScannerStatus(): Promise<{ connected: boolean; message?: string }> {
+    try {
+        // Assuming RDMS service runs on localhost:8005
+        const response = await fetch('http://localhost:8005/status');
+        if (response.ok) {
+            return { connected: true, message: 'Scanner ready' };
+        }
+        return { connected: false, message: 'Scanner not responding' };
+    } catch (error) {
+        return { connected: false, message: 'Scanner disconnected' };
+    }
+}
