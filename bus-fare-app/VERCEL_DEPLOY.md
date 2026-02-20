@@ -1,34 +1,68 @@
-# Deployment Guide for Vercel
+# Vercel Deployment Guide
 
-## Potential Error Cause: "NOT_FOUND" / 404
-If you are seeing a 404 NOT_FOUND error on Vercel, it is likely because Vercel is looking for your `index.html` in the wrong place. 
+## Why You See 404: NOT_FOUND
 
-Since your project is located in `bus/bus-fare-app` (not the root of the repository), you must tell Vercel where to find it.
+The most common cause: Vercel is pointed at the **repo root** (`bus/`) instead of the actual frontend app folder (`bus/bus-fare-app`). Vercel finds no `index.html` or `package.json` at the root, so it returns 404.
 
-## Fix 1: Configure Root Directory (Recommended)
-When importing your project in Vercel:
+---
 
-1. Go to **Settings** > **General** (or during the initial import setup).
-2. Find the **Root Directory** field.
-3. Click "Edit" and browse to select `bus/bus-fare-app`.
-4. Ensure the **Framework Preset** is set to **Vite**.
-5. The **Output Directory** should automatically be set to `dist` (which is correct for Vite).
+## ✅ Fix: Vercel Dashboard Settings
 
-## Fix 2: Manual CLI Deployment
-If you are deploying via the command line using `vercel` generic command:
+When importing your project on Vercel (or in **Settings → General**):
 
-1. Open your terminal.
-2. Navigate **into** the frontend directory:
-   ```bash
-   cd bus/bus-fare-app
-   ```
-3. Run the valid deploy command:
-   ```bash
-   vercel
-   ```
+| Setting              | Value              |
+|----------------------|--------------------|
+| **Root Directory**   | `bus/bus-fare-app` |
+| **Framework Preset** | `Vite`             |
+| **Build Command**    | `npm run build`    |
+| **Output Directory** | `dist`             |
+| **Install Command**  | `npm install`      |
 
-## ⚠️ Important Note on Backend
-This deployment only handles the **Frontend** (React App). 
-Your backend (`bus/backend`) is a separate Node.js server. Vercel is primarily for frontend. 
-- The frontend will try to call `/api` (proxied to localhost in dev).
-- In production, you must update your API base URL to point to your live backend server (hosted on Render, Railway, or Heroku, or as Vercel Serverless Functions if rewritten).
+> **Important:** The `Root Directory` field must be set to `bus/bus-fare-app`.  
+> This is the folder containing `package.json`, `vite.config.ts`, and `index.html`.
+
+---
+
+## ✅ vercel.json (already configured)
+
+The `vercel.json` file located in `bus/bus-fare-app/` already contains the correct SPA fallback rewrite:
+
+```json
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "installCommand": "npm install",
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
+```
+
+This ensures:
+- All routes fall back to `index.html` (required for React Router / SPA)
+- Build output is read from the `dist` folder
+
+---
+
+## ✅ CLI Deployment
+
+If deploying via terminal:
+
+```bash
+cd bus/bus-fare-app
+vercel --prod
+```
+
+When prompted, set root directory to `.` (current directory).
+
+---
+
+## ⚠️ Backend Note
+
+This deployment only covers the **frontend React app**.
+
+Your backend (`bus/backend`) is a separate Node.js server and must be hosted separately (e.g., Render, Railway, or Heroku). In production, update your API base URL environment variable to point to the live backend URL instead of `localhost:5000`.

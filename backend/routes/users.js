@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import User from '../models/User.js';
 import Transaction from '../models/Transaction.js';
 
@@ -13,6 +14,13 @@ router.get('/:userId', async (req, res) => {
         const { userId } = req.params;
 
         console.log('📋 Fetching user:', userId);
+
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid User ID format. Please start a new trip.'
+            });
+        }
 
         const user = await User.findById(userId).select('-password -fingerprintTemplate');
 
