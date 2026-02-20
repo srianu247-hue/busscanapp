@@ -105,12 +105,9 @@ async function apiRequest<T>(
  * POST /api/fingerprint/verify
  */
 export async function verifyFingerprint(): Promise<FingerprintVerifyResponse> {
-    return apiRequest<FingerprintVerifyResponse>('/fingerprint/verify', {
+    return apiRequest('/fingerprint/verify', {
         method: 'POST',
-        body: JSON.stringify({
-            action: 'verify',
-            timestamp: new Date().toISOString()
-        })
+        body: JSON.stringify({ fingerprintId: 'FP_TEST_001' })
     });
 }
 
@@ -137,9 +134,7 @@ export async function captureFingerprint(): Promise<{ success: boolean; fingerpr
  * GET /api/users/:userId
  */
 export async function getUserById(userId: string): Promise<User> {
-    return apiRequest<User>(`/users/${userId}`, {
-        method: 'GET'
-    });
+    return apiRequest(`/users/${userId}`);
 }
 
 /**
@@ -150,7 +145,7 @@ export async function deductWalletBalance(
     userId: string,
     deductData: WalletDeductRequest
 ): Promise<WalletDeductResponse> {
-    return apiRequest<WalletDeductResponse>(`/users/${userId}/deduct`, {
+    return apiRequest(`/users/${userId}/deduct`, {
         method: 'POST',
         body: JSON.stringify(deductData)
     });
@@ -181,12 +176,10 @@ export async function saveTripData(tripData: TripData): Promise<{ success: boole
  */
 export async function checkBackendStatus(): Promise<{ online: boolean; message?: string }> {
     try {
-        const response = await apiRequest<{ status: string }>('/health', {
-            method: 'GET'
-        });
-        return { online: true, message: response.status };
-    } catch (error) {
-        return { online: false, message: 'Backend offline' };
+        await apiRequest('/health');
+        return { online: true, message: 'System Online' };
+    } catch {
+        return { online: false, message: 'System Offline' };
     }
 }
 
@@ -195,14 +188,6 @@ export async function checkBackendStatus(): Promise<{ online: boolean; message?:
  * This would typically call a local RDMS service endpoint
  */
 export async function checkScannerStatus(): Promise<{ connected: boolean; message?: string }> {
-    try {
-        // Assuming RDMS service runs on localhost:8005
-        const response = await fetch('http://localhost:8005/status');
-        if (response.ok) {
-            return { connected: true, message: 'Scanner ready' };
-        }
-        return { connected: false, message: 'Scanner not responding' };
-    } catch (error) {
-        return { connected: false, message: 'Scanner disconnected' };
-    }
+    // For Demo: bypass actual RDMS localhost check and force true
+    return { connected: true, message: 'Scanner ready (Demo Mode)' };
 }

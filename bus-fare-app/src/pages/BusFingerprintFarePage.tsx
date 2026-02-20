@@ -121,9 +121,6 @@ const BusFingerprintFarePage: React.FC = () => {
         }
     };
 
-    /**
-     * Restore active session if exists
-     */
     const restoreSession = () => {
         if (hasActiveTripSession()) {
             const session = getTripSession();
@@ -135,7 +132,14 @@ const BusFingerprintFarePage: React.FC = () => {
                 // Restore user data
                 getUserById(session.userId)
                     .then(setCurrentUser)
-                    .catch(console.error);
+                    .catch((err) => {
+                        console.error('Failed to restore user from session, clearing stale data:', err);
+                        clearTripSession();
+                        setTripStatus('IDLE');
+                        setStatusMessage('');
+                        setEntryLocation(null);
+                        setExitLocation(null);
+                    });
             }
         }
     };
@@ -144,7 +148,18 @@ const BusFingerprintFarePage: React.FC = () => {
     // ENTRY SCAN HANDLER
     // ==========================================
 
-    const handleEntryScan = async () => {
+    const handleResetAndEntryScan = async () => {
+        if (tripStatus === 'COMPLETED' || tripStatus === 'ERROR') {
+            setTripStatus('IDLE');
+            setStatusMessage('');
+            setCurrentUser(null);
+            setEntryLocation(null);
+            setExitLocation(null);
+            setTripSummary(null);
+            setError(null);
+            clearTripSession();
+        }
+
         setIsScanning(true);
         setError(null);
 
@@ -285,21 +300,6 @@ const BusFingerprintFarePage: React.FC = () => {
     };
 
     // ==========================================
-    // RESET HANDLER
-    // ==========================================
-
-    const handleReset = () => {
-        setTripStatus('IDLE');
-        setStatusMessage('');
-        setCurrentUser(null);
-        setEntryLocation(null);
-        setExitLocation(null);
-        setTripSummary(null);
-        setError(null);
-        clearTripSession();
-    };
-
-    // ==========================================
     // RENDER
     // ==========================================
 
@@ -343,14 +343,12 @@ const BusFingerprintFarePage: React.FC = () => {
                 )}
 
                 {/* Fingerprint Action Card */}
-                {tripStatus !== 'COMPLETED' && (
-                    <FingerprintActionCard
-                        mode={tripStatus === 'ONGOING' ? 'EXIT' : 'ENTRY'}
-                        onScan={tripStatus === 'ONGOING' ? handleExitScan : handleEntryScan}
-                        isScanning={isScanning}
-                        disabled={!backendOnline || !scannerConnected}
-                    />
-                )}
+                <FingerprintActionCard
+                    mode={tripStatus === 'ONGOING' ? 'EXIT' : 'ENTRY'}
+                    onScan={tripStatus === 'ONGOING' ? handleExitScan : handleResetAndEntryScan}
+                    isScanning={isScanning}
+                    disabled={!backendOnline || !scannerConnected}
+                />
 
                 {/* User Info Card */}
                 <UserInfoCard
@@ -378,16 +376,6 @@ const BusFingerprintFarePage: React.FC = () => {
                         walletBalanceAfter={tripSummary.walletBalanceAfter}
                         show={tripStatus === 'COMPLETED'}
                     />
-                )}
-
-                {/* Reset Button */}
-                {tripStatus === 'COMPLETED' && (
-                    <button
-                        onClick={handleReset}
-                        className="w-full py-4 px-6 bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-xl font-semibold text-lg hover:from-blue-600 hover:to-blue-800 transition-all duration-300 shadow-lg hover:shadow-xl"
-                    >
-                        Start New Trip
-                    </button>
                 )}
             </main>
 

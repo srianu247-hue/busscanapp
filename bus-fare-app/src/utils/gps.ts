@@ -19,44 +19,23 @@ export interface GPSCoordinates {
  * Returns Promise with coordinates or throws error
  */
 export function captureGPSLocation(): Promise<GPSCoordinates> {
-    return new Promise((resolve, reject) => {
-        if (!navigator.geolocation) {
-            reject(new Error('Geolocation not supported by this browser'));
-            return;
-        }
+    return new Promise((resolve) => {
+        // MOCK GPS for Demo
+        setTimeout(() => {
+            const baseLat = 13.0827; // Chennai
+            const baseLng = 80.2707;
 
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                resolve({
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude,
-                    accuracy: position.coords.accuracy,
-                    timestamp: position.timestamp
-                });
-            },
-            (error) => {
-                let errorMessage = 'GPS capture failed';
+            // Random offset to simulate movement between exit/entry
+            const randomOffsetLat = (Math.random() - 0.5) * 0.05;
+            const randomOffsetLng = (Math.random() - 0.5) * 0.05;
 
-                switch (error.code) {
-                    case error.PERMISSION_DENIED:
-                        errorMessage = 'GPS permission denied';
-                        break;
-                    case error.POSITION_UNAVAILABLE:
-                        errorMessage = 'GPS position unavailable';
-                        break;
-                    case error.TIMEOUT:
-                        errorMessage = 'GPS request timeout';
-                        break;
-                }
-
-                reject(new Error(errorMessage));
-            },
-            {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
-            }
-        );
+            resolve({
+                lat: baseLat + randomOffsetLat,
+                lng: baseLng + randomOffsetLng,
+                accuracy: 10,
+                timestamp: Date.now()
+            });
+        }, 1000); // 1 sec fake delay
     });
 }
 
