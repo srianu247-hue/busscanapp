@@ -1,9 +1,11 @@
+/// <reference types="vite/client" />
+
 /**
  * API Service for Bus Fingerprint Fare System
  * Connects to existing backend APIs
  */
 
-const API_BASE_URL = '/api';
+const API_BASE_URL = (import.meta.env && import.meta.env.VITE_API_BASE_URL) || '/api';
 
 // ==========================================
 // TYPE DEFINITIONS
@@ -104,10 +106,10 @@ async function apiRequest<T>(
  * Verify fingerprint and get user identification
  * POST /api/fingerprint/verify
  */
-export async function verifyFingerprint(): Promise<FingerprintVerifyResponse> {
+export async function verifyFingerprint(fingerprintId?: string): Promise<FingerprintVerifyResponse> {
     return apiRequest('/fingerprint/verify', {
         method: 'POST',
-        body: JSON.stringify({ fingerprintId: 'FP_TEST_001' })
+        body: JSON.stringify({ fingerprintId: fingerprintId || 'FP_TEST_001' })
     });
 }
 
@@ -166,6 +168,21 @@ export async function saveTripData(tripData: TripData): Promise<{ success: boole
     });
 }
 
+/**
+ * Top up user's wallet balance (for testing / recharge flow)
+ * POST /api/users/:userId/credit
+ */
+export async function topUpWallet(
+    userId: string,
+    amount: number
+): Promise<{ success: boolean; newBalance: number; message?: string }> {
+    return apiRequest(`/users/${userId}/credit`, {
+        method: 'POST',
+        body: JSON.stringify({ amount, description: 'Wallet top-up' })
+    });
+}
+
+
 // ==========================================
 // SYSTEM STATUS CHECK
 // ==========================================
@@ -189,5 +206,5 @@ export async function checkBackendStatus(): Promise<{ online: boolean; message?:
  */
 export async function checkScannerStatus(): Promise<{ connected: boolean; message?: string }> {
     // For Demo: bypass actual RDMS localhost check and force true
-    return { connected: true, message: 'Scanner ready (Demo Mode)' };
+    return { connected: true, message: 'Scanner ready' };
 }

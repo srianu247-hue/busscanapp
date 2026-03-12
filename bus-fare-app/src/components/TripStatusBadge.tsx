@@ -1,4 +1,4 @@
-import React from 'react';
+import { FC } from 'react';
 import { Clock, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 
 interface TripStatusBadgeProps {
@@ -6,7 +6,7 @@ interface TripStatusBadgeProps {
     message?: string;
 }
 
-const TripStatusBadge: React.FC<TripStatusBadgeProps> = ({ status, message }) => {
+const TripStatusBadge: FC<TripStatusBadgeProps> = ({ status, message }) => {
     const getStatusConfig = () => {
         switch (status) {
             case 'IDLE':

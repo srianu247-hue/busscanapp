@@ -1,6 +1,6 @@
 /**
  * Session Storage Utilities for Trip State Management
- * Stores temporary trip data during entry-exit flow
+ * Stores temporary trip data during entry-exit flow for multiple users
  */
 
 import { GPSCoordinates } from './gps';
@@ -10,92 +10,75 @@ export interface TripSession {
     userName: string;
     fingerprintId: string;
     entryLocation: GPSCoordinates;
+    exitLocation?: GPSCoordinates;
     entryTime: string;
     walletBalanceBefore: number;
     status: 'ONGOING' | 'COMPLETED' | 'CANCELLED';
+    distanceKm?: number;
+    fareAmount?: number;
+    walletBalanceAfter?: number;
 }
 
-const TRIP_SESSION_KEY = 'bus_trip_session';
+const TRIP_SESSIONS_KEY = 'bus_trip_sessions_multiple_v1';
+const EVENT_NAME = 'bus_sessions_updated';
 
 // ==========================================
 // SESSION STORAGE OPERATIONS
 // ==========================================
 
-/**
- * Save trip session to sessionStorage
- */
+export function getAllTripSessions(): Record<string, TripSession> {
+    try {
+        const data = sessionStorage.getItem(TRIP_SESSIONS_KEY);
+        return data ? JSON.parse(data) : {};
+    } catch (error) {
+        console.error('Failed to retrieve trip sessions:', error);
+        return {};
+    }
+}
+
 export function saveTripSession(tripData: TripSession): void {
     try {
-        sessionStorage.setItem(TRIP_SESSION_KEY, JSON.stringify(tripData));
+        const sessions = getAllTripSessions();
+        sessions[tripData.userId] = tripData;
+        sessionStorage.setItem(TRIP_SESSIONS_KEY, JSON.stringify(sessions));
+        window.dispatchEvent(new Event(EVENT_NAME));
     } catch (error) {
         console.error('Failed to save trip session:', error);
         throw new Error('Failed to save trip data');
     }
 }
 
-/**
- * Get current trip session from sessionStorage
- */
-export function getTripSession(): TripSession | null {
-    try {
-        const data = sessionStorage.getItem(TRIP_SESSION_KEY);
-        if (!data) return null;
-
-        return JSON.parse(data) as TripSession;
-    } catch (error) {
-        console.error('Failed to retrieve trip session:', error);
-        return null;
-    }
+export function getTripSession(userId: string): TripSession | null {
+    const sessions = getAllTripSessions();
+    return sessions[userId] || null;
 }
 
-/**
- * Clear trip session from sessionStorage
- */
-export function clearTripSession(): void {
+export function clearTripSession(userId: string): void {
     try {
-        sessionStorage.removeItem(TRIP_SESSION_KEY);
+        const sessions = getAllTripSessions();
+        delete sessions[userId];
+        sessionStorage.setItem(TRIP_SESSIONS_KEY, JSON.stringify(sessions));
+        window.dispatchEvent(new Event(EVENT_NAME));
     } catch (error) {
         console.error('Failed to clear trip session:', error);
     }
 }
 
-/**
- * Check if there's an active trip session
- */
-export function hasActiveTripSession(): boolean {
-    const session = getTripSession();
+export function hasActiveTripSession(userId: string): boolean {
+    const session = getTripSession(userId);
     return session !== null && session.status === 'ONGOING';
 }
 
-/**
- * Update trip session status
- */
-export function updateTripSessionStatus(status: TripSession['status']): void {
-    const session = getTripSession();
+export function updateTripSessionStatus(userId: string, status: TripSession['status']): void {
+    const session = getTripSession(userId);
     if (session) {
         session.status = status;
         saveTripSession(session);
     }
 }
 
-// ==========================================
-// VALIDATION
-// ==========================================
-
-/**
- * Validate if exit scan matches entry scan user
- */
-export function validateExitScan(exitUserId: string): boolean {
-    const session = getTripSession();
-
-    if (!session) {
-        throw new Error('No active trip session found');
-    }
-
-    if (session.userId !== exitUserId) {
-        // MOCK DEMO FIX: Do not throw an error during the demo when test scans differ slightly
-        console.warn(`Exit scan user mismatch bypassed: ${session.userId} vs ${exitUserId}`);
-    }
-
-    return true;
+// Subscriptions
+export function subscribeToSessions(callback: () => void): () => void {
+    window.addEventListener(EVENT_NAME, callback);
+    return () => window.removeEventListener(EVENT_NAME, callback);
 }

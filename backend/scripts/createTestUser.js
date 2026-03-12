@@ -16,26 +16,26 @@ async function createTestUsers() {
         // Test users data
         const testUsers = [
             {
-                name: 'John Doe',
-                email: 'john@example.com',
-                phone: '+91 9876543210',
-                password: 'password123', // In production, this should be hashed
-                walletBalance: 500.00,
+                name: 'Srinithi63694 95325',
+                email: 'srinithi@example.com',
+                phone: '+91 9532563694',
+                password: 'password123',
+                walletBalance: 1000.00,
                 status: 'active',
                 fingerprintId: 'FP_TEST_001'
             },
             {
-                name: 'Jane Smith',
-                email: 'jane@example.com',
-                phone: '+91 9876543211',
+                name: 'Varshini 99410 83933',
+                email: 'varshini@example.com',
+                phone: '+91 9941083933',
                 password: 'password123',
-                walletBalance: 250.50,
+                walletBalance: 1000.00,
                 status: 'active',
                 fingerprintId: 'FP_TEST_002'
             },
             {
-                name: 'Bob Wilson',
-                email: 'bob@example.com',
+                name: 'Harini',
+                email: 'harini@example.com',
                 phone: '+91 9876543212',
                 password: 'password123',
                 walletBalance: 1000.00,
@@ -43,22 +43,13 @@ async function createTestUsers() {
                 fingerprintId: 'FP_TEST_003'
             },
             {
-                name: 'Alice Brown',
-                email: 'alice@example.com',
-                phone: '+91 9876543213',
+                name: 'Anonymous',
+                email: 'anonymous@example.com',
+                phone: '+91 0000000000',
                 password: 'password123',
-                walletBalance: 50.00,
+                walletBalance: 10000.00,
                 status: 'active',
-                fingerprintId: 'FP_TEST_004'
-            },
-            {
-                name: 'Blocked User',
-                email: 'blocked@example.com',
-                phone: '+91 9876543214',
-                password: 'password123',
-                walletBalance: 100.00,
-                status: 'blocked',
-                fingerprintId: 'FP_TEST_BLOCKED'
+                fingerprintId: 'FP_ANONYMOUS'
             }
         ];
 
@@ -86,11 +77,10 @@ async function createTestUsers() {
 
         console.log('✅ Test users created successfully!\n');
         console.log('📋 Test Fingerprint IDs for scanning:');
-        console.log('   • FP_TEST_001 - John Doe (₹500)');
-        console.log('   • FP_TEST_002 - Jane Smith (₹250.50)');
-        console.log('   • FP_TEST_003 - Bob Wilson (₹1000)');
-        console.log('   • FP_TEST_004 - Alice Brown (₹50)');
-        console.log('   • FP_TEST_BLOCKED - Blocked User (blocked)');
+        console.log('   • FP_TEST_001 - Srinithi63694 95325');
+        console.log('   • FP_TEST_002 - Varshini 99410 83933');
+        console.log('   • FP_TEST_003 - Harini');
+        console.log('   • FP_ANONYMOUS - Anonymous');
         console.log('');
         console.log('💡 Use these fingerprint IDs in the frontend for testing');
         console.log('');

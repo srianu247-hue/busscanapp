@@ -1,4 +1,4 @@
-import React from 'react';
+import { FC } from 'react';
 import { Receipt, MapPin, ArrowRight, CreditCard, TrendingDown, TrendingUp } from 'lucide-react';
 
 interface FareSummaryCardProps {
@@ -12,7 +12,7 @@ interface FareSummaryCardProps {
     show: boolean;
 }
 
-const FareSummaryCard: React.FC<FareSummaryCardProps> = ({
+const FareSummaryCard: FC<FareSummaryCardProps> = ({
     userName,
     fromLocation,
     toLocation,

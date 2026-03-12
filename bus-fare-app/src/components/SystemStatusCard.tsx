@@ -1,4 +1,4 @@
-import React from 'react';
+import { FC } from 'react';
 import { Wifi, WifiOff, Fingerprint, CheckCircle, XCircle } from 'lucide-react';
 
 interface SystemStatusCardProps {
@@ -8,7 +8,7 @@ interface SystemStatusCardProps {
     scannerMessage?: string;
 }
 
-const SystemStatusCard: React.FC<SystemStatusCardProps> = ({
+const SystemStatusCard: FC<SystemStatusCardProps> = ({
     backendOnline,
     scannerConnected,
     backendMessage,

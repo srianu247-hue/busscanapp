@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { FC, useState, useEffect, useRef } from 'react';
 import { Fingerprint, Loader2, CheckCircle2, Bus } from 'lucide-react';
 
 interface FingerprintActionCardProps {
@@ -8,7 +8,7 @@ interface FingerprintActionCardProps {
     disabled: boolean;
 }
 
-const FingerprintActionCard: React.FC<FingerprintActionCardProps> = ({
+const FingerprintActionCard: FC<FingerprintActionCardProps> = ({
     mode,
     onScan,
     isScanning: parentIsScanning,
@@ -112,7 +112,7 @@ const FingerprintActionCard: React.FC<FingerprintActionCardProps> = ({
                 <div className="absolute top-4 left-0 w-full flex justify-center z-50 animate-fadeIn">
                     <div className="bg-green-600 text-white px-6 py-3 rounded-full shadow-xl flex items-center gap-3 font-semibold tracking-wide">
                         <CheckCircle2 className="w-5 h-5" />
-                        {isEntry ? 'Trip has started successfully!' : 'Trip ended successfully!'}
+                        Fingerprint pattern captured!
                     </div>
                 </div>
             )}

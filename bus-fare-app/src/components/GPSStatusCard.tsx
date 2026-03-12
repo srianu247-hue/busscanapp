@@ -1,5 +1,5 @@
-import React from 'react';
-import { MapPin, Navigation, CheckCircle, Loader2 } from 'lucide-react';
+import { FC } from 'react';
+import { MapPin, Navigation, CheckCircle, Loader2, AlertTriangle, Radio } from 'lucide-react';
 import { GPSCoordinates, formatGPSCoordinates } from '../utils/gps';
 
 interface GPSStatusCardProps {
@@ -7,13 +7,19 @@ interface GPSStatusCardProps {
     exitLocation: GPSCoordinates | null;
     isCapturing: boolean;
     show: boolean;
+    /** Non-null when GPS permission is denied or GPS is disabled */
+    gpsError?: string | null;
+    /** True while watchPosition is actively streaming updates */
+    isTracking?: boolean;
 }
 
-const GPSStatusCard: React.FC<GPSStatusCardProps> = ({
+const GPSStatusCard: FC<GPSStatusCardProps> = ({
     entryLocation,
     exitLocation,
     isCapturing,
-    show
+    show,
+    gpsError = null,
+    isTracking = false
 }) => {
     if (!show) return null;
 
@@ -22,7 +28,27 @@ const GPSStatusCard: React.FC<GPSStatusCardProps> = ({
             <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
                 <Navigation className="w-6 h-6 text-blue-600" />
                 GPS Location Tracking
+                {isTracking && !gpsError && (
+                    <span className="ml-auto flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-3 py-1 rounded-full">
+                        <Radio className="w-3 h-3 animate-pulse" />
+                        LIVE
+                    </span>
+                )}
             </h2>
+
+            {/* GPS Permission / Device Error Banner */}
+            {gpsError && (
+                <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-300 rounded-xl mb-4">
+                    <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                        <p className="text-sm font-semibold text-amber-800">GPS Unavailable</p>
+                        <p className="text-xs text-amber-700 mt-1">{gpsError}</p>
+                        <p className="text-xs text-amber-600 mt-2">
+                            💡 Go to your browser / device <strong>Settings → Location</strong> and allow access, then retry.
+                        </p>
+                    </div>
+                </div>
+            )}
 
             <div className="space-y-3">
                 {/* Entry Location */}
@@ -78,3 +104,4 @@ const GPSStatusCard: React.FC<GPSStatusCardProps> = ({
 };
 
 export default GPSStatusCard;
+

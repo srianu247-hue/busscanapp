@@ -1,4 +1,4 @@
-import React from 'react';
+import { FC } from 'react';
 import { User, Wallet, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { User as UserType } from '../services/api';
 
@@ -7,7 +7,7 @@ interface UserInfoCardProps {
     show: boolean;
 }
 
-const UserInfoCard: React.FC<UserInfoCardProps> = ({ user, show }) => {
+const UserInfoCard: FC<UserInfoCardProps> = ({ user, show }) => {
     if (!show || !user) return null;
 
     const isActive = user.status === 'active';

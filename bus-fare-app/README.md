@@ -417,3 +417,5 @@ This project is part of the Bus Fingerprint Fare System.
 ---
 
 **Built with ❤️ for seamless bus travel experience**
+#   b u s s c a n a p p  
+ 

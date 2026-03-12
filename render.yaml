@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: bus-fare-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false        # Set this manually in Render dashboard
+      - key: PORT
+        value: 10000       # Render uses port 10000 by default

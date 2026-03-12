@@ -18,11 +18,26 @@ const PORT = process.env.PORT || 5000;
 // MIDDLEWARE
 // ==========================================
 
-// CORS configuration
+// CORS configuration - supports local dev + Vercel deployment
+const allowedOrigins = [
+    process.env.CORS_ORIGIN,
+    'http://localhost:3001',
+    'http://localhost:5173',
+].filter(Boolean);
+
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3001',
+    origin: (origin, callback) => {
+        // Allow requests with no origin (e.g. Render health checks, curl)
+        if (!origin) return callback(null, true);
+        // Allow any vercel.app subdomain or explicitly listed origins
+        if (allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin)) {
+            return callback(null, true);
+        }
+        callback(new Error(`CORS blocked: ${origin}`));
+    },
     credentials: true
 }));
+
 
 // Body parser
 app.use(express.json());

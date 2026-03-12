@@ -1,4 +1,3 @@
-import React from 'react';
 import BusFingerprintFarePage from './pages/BusFingerprintFarePage';
 
 function App() {

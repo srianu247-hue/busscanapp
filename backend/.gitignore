@@ -3,6 +3,3 @@ node_modules/
 *.log
 out.log
 .DS_Store
-dist/
-.env.local
-.env.production.local

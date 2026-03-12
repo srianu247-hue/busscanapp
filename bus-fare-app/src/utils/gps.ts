@@ -1,6 +1,7 @@
 /**
  * GPS and Distance Calculation Utilities
  * Haversine formula for distance calculation
+ * Supports real browser Geolocation API with mock fallback
  */
 
 export interface GPSCoordinates {
@@ -10,33 +11,160 @@ export interface GPSCoordinates {
     timestamp?: number;
 }
 
+export type GPSPermissionStatus = 'granted' | 'denied' | 'prompt' | 'unavailable';
+
+// ==========================================
+// PERMISSION HANDLING
+// ==========================================
+
+/**
+ * Request location permission from the browser.
+ * Returns the resulting permission status.
+ */
+export async function requestLocationPermission(): Promise<GPSPermissionStatus> {
+    if (!navigator.geolocation) {
+        return 'unavailable';
+    }
+    // Use Permissions API if available for a non-blocking check
+    if (navigator.permissions) {
+        try {
+            const result = await navigator.permissions.query({ name: 'geolocation' });
+            if (result.state === 'denied') return 'denied';
+        } catch {
+            // Permissions API not supported; fall through to prompt
+        }
+    }
+    // Trigger a real getCurrentPosition to prompt the user
+    return new Promise((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+            () => resolve('granted'),
+            (err) => {
+                if (err.code === err.PERMISSION_DENIED) resolve('denied');
+                else resolve('prompt');
+            },
+            { timeout: 8000, maximumAge: 0 }
+        );
+    });
+}
+
 // ==========================================
 // GPS CAPTURE
 // ==========================================
 
 /**
- * Capture current GPS location using Browser Geolocation API
- * Returns Promise with coordinates or throws error
+ * Capture current GPS location using Browser Geolocation API.
+ * Falls back to Chennai mock coordinates when geolocation is unavailable.
  */
 export function captureGPSLocation(): Promise<GPSCoordinates> {
+    if (navigator.geolocation) {
+        return new Promise((resolve) => {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    resolve({
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude,
+                        accuracy: position.coords.accuracy,
+                        timestamp: position.timestamp
+                    });
+                },
+                (err) => {
+                    console.warn('Geolocation failed, using mock coordinates:', err.message);
+                    // Graceful mock fallback
+                    resolve(_mockGPSCoordinates());
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        });
+    }
+    // Browser doesn't support geolocation at all
     return new Promise((resolve) => {
-        // MOCK GPS for Demo
-        setTimeout(() => {
-            const baseLat = 13.0827; // Chennai
-            const baseLng = 80.2707;
-
-            // Random offset to simulate movement between exit/entry
-            const randomOffsetLat = (Math.random() - 0.5) * 0.05;
-            const randomOffsetLng = (Math.random() - 0.5) * 0.05;
-
-            resolve({
-                lat: baseLat + randomOffsetLat,
-                lng: baseLng + randomOffsetLng,
-                accuracy: 10,
-                timestamp: Date.now()
-            });
-        }, 1000); // 1 sec fake delay
+        setTimeout(() => resolve(_mockGPSCoordinates()), 1000);
     });
+}
+
+/** Internal: generate mock Chennai-area coordinates */
+function _mockGPSCoordinates(): GPSCoordinates {
+    const baseLat = 13.0827;
+    const baseLng = 80.2707;
+    return {
+        lat: baseLat + (Math.random() - 0.5) * 0.05,
+        lng: baseLng + (Math.random() - 0.5) * 0.05,
+        accuracy: 10,
+        timestamp: Date.now()
+    };
+}
+
+// ==========================================
+// REAL-TIME GPS TRACKING
+// ==========================================
+
+export type GPSCallback = (coords: GPSCoordinates) => void;
+export type GPSErrorCallback = (message: string) => void;
+
+let _watchId: number | null = null;
+let _mockInterval: ReturnType<typeof setInterval> | null = null;
+
+/**
+ * Start real-time GPS tracking.
+ * Calls `onUpdate` whenever a new location fix arrives.
+ * Calls `onError` if permission is denied or GPS is disabled.
+ * Returns a cleanup function to stop tracking.
+ */
+export function startRealTimeGPSTracking(
+    onUpdate: GPSCallback,
+    onError: GPSErrorCallback
+): () => void {
+    if (navigator.geolocation) {
+        _watchId = navigator.geolocation.watchPosition(
+            (position) => {
+                onUpdate({
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                    accuracy: position.coords.accuracy,
+                    timestamp: position.timestamp
+                });
+            },
+            (err) => {
+                if (err.code === err.PERMISSION_DENIED) {
+                    onError('Location access denied. Please enable GPS in your browser settings.');
+                } else if (err.code === err.POSITION_UNAVAILABLE) {
+                    onError('GPS signal unavailable. Please enable GPS on your device.');
+                } else {
+                    onError('GPS timeout. Please check your device location settings.');
+                }
+            },
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
+        );
+    } else {
+        // Mock fallback: emit a new position every 5 seconds
+        console.warn('Geolocation API not available – using mock tracking.');
+        _mockInterval = setInterval(() => {
+            onUpdate(_mockGPSCoordinates());
+        }, 5000);
+    }
+
+    return stopGPSTracking;
+}
+
+/**
+ * Stop any active real-time GPS tracking session.
+ */
+export function stopGPSTracking(): void {
+    if (_watchId !== null) {
+        navigator.geolocation.clearWatch(_watchId);
+        _watchId = null;
+    }
+    if (_mockInterval !== null) {
+        clearInterval(_mockInterval);
+        _mockInterval = null;
+    }
+}
+
+/**
+ * Returns true if a real-time tracking session is currently active.
+ */
+export function isGPSTrackingActive(): boolean {
+    return _watchId !== null || _mockInterval !== null;
 }
 
 // ==========================================
