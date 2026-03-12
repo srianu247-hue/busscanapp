@@ -85,7 +85,6 @@ const BusFingerprintFarePage: FC = () => {
     const [toastMessage, setToastMessage] = useState('');
 
     // Demo State
-    const [userIndex, setUserIndex] = useState(0);
     const isAnonymousRef = useRef(false);
     const [isExitMode, setIsExitMode] = useState(false);
     const fingerprintKeyRef = useRef<string | null>(null); // holds '9','6','3' for named user scan
@@ -267,9 +266,8 @@ const BusFingerprintFarePage: FC = () => {
                 fpToScan = 'FP_ANONYMOUS';
                 isAnonymousRef.current = false; 
             } else {
-                const testFingerprints = ['FP_TEST_001', 'FP_TEST_002', 'FP_TEST_003'];
-                fpToScan = testFingerprints[userIndex % testFingerprints.length];
-                setUserIndex(prev => prev + 1);
+                // Generic scan -> Random user from DB
+                fpToScan = 'FP_RANDOM';
             }
 
             // Verify
@@ -413,23 +411,6 @@ const BusFingerprintFarePage: FC = () => {
                  </p>
             </div>
 
-            {/* Keyboard shortcut legend */}
-            <div className="mt-6 bg-white rounded-2xl shadow p-4 border border-blue-100">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 text-center">Keyboard Shortcuts</p>
-                <div className="space-y-2">
-                    {[
-                        { key: '9', name: 'Srinithi', phone: '63694 95325' },
-                        { key: '6', name: 'Varshini', phone: '99410 83933' },
-                        { key: '3', name: 'Harini', phone: '' },
-                    ].map(({ key, name, phone }) => (
-                        <div key={key} className="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-blue-50 transition-colors">
-                            <span className="w-8 h-8 flex items-center justify-center bg-blue-600 text-white font-bold rounded-lg text-sm shadow">{key}</span>
-                            <span className="font-semibold text-gray-800">{name}</span>
-                            {phone && <span className="text-xs text-gray-400 ml-auto">{phone}</span>}
-                        </div>
-                    ))}
-                </div>
-            </div>
         </div>
     );
 

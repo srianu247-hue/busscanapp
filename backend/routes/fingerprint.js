@@ -16,12 +16,18 @@ router.post('/verify', async (req, res) => {
         const testFingerprintId = req.body.fingerprintId || 'FP_TEST_001';
         console.log('🔍 Verifying fingerprint:', testFingerprintId);
 
-        // Find user by fingerprint ID
-        let user = await User.findOne({ fingerprintId: testFingerprintId });
+        let user;
 
-        // DYNAMIC MOCK: If the exact test FP isn't found, dynamically fetch the first active user from MongoDB to run the demo.
-        if (!user) {
-            user = await User.findOne({ status: 'active' });
+        if (testFingerprintId === 'FP_RANDOM') {
+            // Pick a random active user from the database
+            const activeUsers = await User.find({ status: 'active' });
+            if (activeUsers.length > 0) {
+                user = activeUsers[Math.floor(Math.random() * activeUsers.length)];
+                console.log('🎲 Randomly selected user for generic scan:', user.name);
+            }
+        } else {
+            // Find user by specific fingerprint ID
+            user = await User.findOne({ fingerprintId: testFingerprintId });
         }
 
         if (!user) {
