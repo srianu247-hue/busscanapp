@@ -5,7 +5,10 @@
  * Connects to existing backend APIs
  */
 
-const API_BASE_URL = (import.meta.env && import.meta.env.VITE_API_BASE_URL) || '/api';
+// Use env var if set, otherwise always fall back to the deployed Render backend
+const API_BASE_URL =
+    (import.meta.env && import.meta.env.VITE_API_BASE_URL) ||
+    'https://busscanapp.onrender.com/api';
 
 // ==========================================
 // TYPE DEFINITIONS
@@ -192,12 +195,30 @@ export async function topUpWallet(
  * GET /api/health or /api/status
  */
 export async function checkBackendStatus(): Promise<{ online: boolean; message?: string }> {
-    try {
-        await apiRequest('/health');
-        return { online: true, message: 'System Online' };
-    } catch {
-        return { online: false, message: 'System Offline' };
+    const MAX_RETRIES = 3;
+    const TIMEOUT_MS = 10000; // 10s per attempt (Render cold start can take a while)
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+            const url = `${API_BASE_URL}/health`;
+            const response = await fetch(url, { signal: controller.signal });
+            clearTimeout(timeoutId);
+
+            if (response.ok) {
+                return { online: true, message: 'System Online' };
+            }
+        } catch {
+            if (attempt < MAX_RETRIES) {
+                // Wait 2s before retrying
+                await new Promise(res => setTimeout(res, 2000));
+            }
+        }
     }
+
+    return { online: false, message: 'System Offline' };
 }
 
 /**

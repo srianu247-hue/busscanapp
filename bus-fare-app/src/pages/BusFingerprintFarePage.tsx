@@ -103,6 +103,11 @@ const BusFingerprintFarePage: FC = () => {
         checkSystemStatus();
         updateSessionsList();
 
+        // Re-check every 30s so UI auto-updates when Render wakes from cold start
+        const statusInterval = setInterval(() => {
+            checkSystemStatus();
+        }, 30000);
+
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Enter') {
                 isAnonymousRef.current = true;
@@ -130,6 +135,7 @@ const BusFingerprintFarePage: FC = () => {
 
         // Cleanup tracking on unmount
         return () => {
+            clearInterval(statusInterval);
             stopGPSTracking();
             window.removeEventListener('keydown', handleKeyDown);
             unsubscribe();
@@ -162,6 +168,7 @@ const BusFingerprintFarePage: FC = () => {
      * Check backend and scanner connectivity
      */
     const checkSystemStatus = async () => {
+        setBackendMessage('Connecting...');
         try {
             const backendStatus = await checkBackendStatus();
             setBackendOnline(backendStatus.online);
@@ -172,6 +179,8 @@ const BusFingerprintFarePage: FC = () => {
             setScannerMessage(scannerStatus.message || '');
         } catch (err) {
             console.error('System status check failed:', err);
+            setBackendOnline(false);
+            setBackendMessage('System Offline');
         }
     };
 
