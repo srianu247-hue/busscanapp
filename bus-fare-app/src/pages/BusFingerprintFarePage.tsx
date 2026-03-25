@@ -1,5 +1,5 @@
 import { FC, useState, useEffect, useRef } from 'react';
-import { Bus, AlertCircle, Fingerprint, LayoutDashboard, UserPlus, LogOut, SkipForward } from 'lucide-react';
+import { Bus, AlertCircle, Fingerprint, LayoutDashboard } from 'lucide-react';
 
 // Components
 import FingerprintActionCard from '../components/FingerprintActionCard';
@@ -85,7 +85,7 @@ const BusFingerprintFarePage: FC = () => {
     const [toastMessage, setToastMessage] = useState('');
 
     // Demo State
-    const [isAnonymousMode, setIsAnonymousMode] = useState(false);
+    const isAnonymousRef = useRef(false);
     const [isExitMode, setIsExitMode] = useState(false);
     const fingerprintKeyRef = useRef<string | null>(null); // holds '9','6','3' for named user scan
     const handleScanRef = useRef<() => void>(() => {}); // always points to latest handleFingerprintScan
@@ -110,10 +110,8 @@ const BusFingerprintFarePage: FC = () => {
 
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Enter') {
-                setIsAnonymousMode(true);
+                isAnonymousRef.current = true;
             } else if (e.key === '+' || e.key === '=') {
-                setIsAnonymousMode(true);
-            } else if (e.key === '-') {
                 setIsExitMode(true);
             } else if (e.key === '9') {
                 // Srinithi63694 95325 → FP_TEST_001
@@ -273,9 +271,9 @@ const BusFingerprintFarePage: FC = () => {
                 };
                 fpToScan = keyMap[fingerprintKeyRef.current] || 'FP_TEST_001';
                 fingerprintKeyRef.current = null;
-            } else if (isAnonymousMode) {
+            } else if (isAnonymousRef.current) {
                 fpToScan = 'FP_ANONYMOUS';
-                setIsAnonymousMode(false); 
+                isAnonymousRef.current = false; 
             } else {
                 // Generic scan -> Random user from DB
                 fpToScan = 'FP_RANDOM';
@@ -387,51 +385,6 @@ const BusFingerprintFarePage: FC = () => {
 
     const renderScannerView = () => (
         <div className="max-w-md mx-auto fade-in">
-            {/* Quick Access Toolbar */}
-            <div className="flex gap-2 mb-6">
-                <button
-                    onClick={() => setIsAnonymousMode(!isAnonymousMode)}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 transition-all font-semibold ${
-                        isAnonymousMode 
-                        ? 'bg-blue-600 border-blue-600 text-white shadow-lg scale-105' 
-                        : 'bg-white border-gray-200 text-gray-600 hover:border-blue-300 hover:text-blue-600'
-                    }`}
-                >
-                    <UserPlus className="w-5 h-5" />
-                    + Anonymous
-                </button>
-                <button
-                    onClick={() => setIsExitMode(true)}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 transition-all font-semibold ${
-                        isExitMode 
-                        ? 'bg-orange-600 border-orange-600 text-white shadow-lg scale-105' 
-                        : 'bg-white border-gray-200 text-gray-600 hover:border-orange-300 hover:text-orange-600'
-                    }`}
-                    disabled={activeSessions.length === 0}
-                >
-                    <LogOut className="w-5 h-5" />
-                    Manual Exit
-                </button>
-            </div>
-
-            {isExitMode && (
-                <div className="bg-orange-50 border-2 border-orange-200 rounded-xl p-4 mb-6 animate-pulse">
-                    <p className="text-orange-800 font-bold flex items-center gap-2">
-                        <SkipForward className="w-5 h-5" /> EXIT OVERRIDE ACTIVE
-                    </p>
-                    <p className="text-sm text-orange-700">Next scan will exit the oldest passenger.</p>
-                </div>
-            )}
-
-            {isAnonymousMode && (
-                <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-6 animate-pulse">
-                    <p className="text-blue-800 font-bold flex items-center gap-2">
-                        <UserPlus className="w-5 h-5" /> ANONYMOUS MODE ACTIVE
-                    </p>
-                    <p className="text-sm text-blue-700">Next scan will use the Anonymous profile.</p>
-                </div>
-            )}
-
             {error && (
                 <div className="bg-red-50 border-2 border-red-300 rounded-xl p-4 mb-6 flex items-start gap-3">
                     <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
