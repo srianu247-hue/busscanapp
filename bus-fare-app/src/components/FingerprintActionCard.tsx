@@ -1,9 +1,9 @@
-import { FC, useState, useEffect, useRef } from 'react';
-import { Fingerprint, Loader2, CheckCircle2, Bus } from 'lucide-react';
+import { FC, useState, useEffect } from 'react';
+import { Fingerprint, Loader2, CheckCircle2 } from 'lucide-react';
 
 interface FingerprintActionCardProps {
     mode: 'ENTRY' | 'EXIT';
-    onScan: () => void;
+    onScan: (shortcut?: string) => void;
     isScanning: boolean;
     disabled: boolean;
 }
@@ -16,93 +16,38 @@ const FingerprintActionCard: FC<FingerprintActionCardProps> = ({
 }) => {
     const isEntry = mode === 'ENTRY';
 
-    // Configurable durations
-    const HOLD_DURATION = isEntry ? 5000 : 3000;
-
     // Internal states
-    const [scanState, setScanState] = useState<'idle' | 'holding' | 'success'>('idle');
-    const [progress, setProgress] = useState(0);
+    const [scanState, setScanState] = useState<'idle' | 'success'>('idle');
     const [showPopup, setShowPopup] = useState(false);
-
-    // Refs for tracking animation timing accurately
-    const requestRef = useRef<number | null>(null);
-    const startTimeRef = useRef<number | null>(null);
 
     // Reset state on mode change
     useEffect(() => {
         setScanState('idle');
-        setProgress(0);
         setShowPopup(false);
-        cancelHold();
     }, [mode]);
 
-    const animateProgress = (timestamp: number) => {
-        if (startTimeRef.current === null) startTimeRef.current = timestamp;
-
-        const elapsed = timestamp - startTimeRef.current;
-        const newProgress = Math.min((elapsed / HOLD_DURATION) * 100, 100);
-
-        setProgress(newProgress);
-
-        if (elapsed < HOLD_DURATION) {
-            requestRef.current = requestAnimationFrame(animateProgress);
-        } else {
-            // Successfully held for the full duration
-            completeScan();
-        }
-    };
-
-    const handleHoldStart = () => {
+    const handleOneClickScan = (shortcut?: string) => {
         if (disabled || parentIsScanning || scanState !== 'idle') return;
-        setScanState('holding');
-        setProgress(0);
-        startTimeRef.current = null;
-        requestRef.current = requestAnimationFrame(animateProgress);
-    };
-
-    const handleHoldEnd = () => {
-        // If they released early before success state
-        if (scanState === 'holding') {
-            cancelHold();
-        }
-    };
-
-    const cancelHold = () => {
-        if (requestRef.current) {
-            cancelAnimationFrame(requestRef.current);
-        }
-        setScanState('idle');
-        setProgress(0);
-    };
-
-    const completeScan = () => {
-        if (requestRef.current) cancelAnimationFrame(requestRef.current);
-
+        
         setScanState('success');
-        setProgress(100);
         setShowPopup(true);
 
         // Hide pop-up, reset to idle, and trigger API flow after small delay
         setTimeout(() => {
             setShowPopup(false);
             setScanState('idle');
-            setProgress(0);
-            onScan();
-        }, 3000);
+            // We pass the shortcut key if it exists, but the existing onScan prop 
+            // doesn't support it yet. I will update the parent to handle it.
+            // For now, I'll just trigger the scan. If I need the shortcut, 
+            // I'll need to update the prop signature.
+            // Actually, I'll update the prop signature in FingerprintActionCardProps.
+            (onScan as any)(shortcut);
+        }, 800);
     };
 
-    // Clean up animation frames
-    useEffect(() => {
-        return () => {
-            if (requestRef.current) cancelAnimationFrame(requestRef.current);
-        };
-    }, []);
-
-
-    // SVG Math for progress circle
+    // SVG Math for progress circle (still useful for success state)
     const radius = 60;
     const circumference = 2 * Math.PI * radius;
-    const strokeDashoffset = circumference - (progress / 100) * circumference;
 
     return (
         <div className="bg-white rounded-2xl shadow-lg p-8 mb-6 relative overflow-hidden">
@@ -112,7 +57,7 @@ const FingerprintActionCard: FC<FingerprintActionCardProps> = ({
                 <div className="absolute top-4 left-0 w-full flex justify-center z-50 animate-fadeIn">
                     <div className="bg-green-600 text-white px-6 py-3 rounded-full shadow-xl flex items-center gap-3 font-semibold tracking-wide">
                         <CheckCircle2 className="w-5 h-5" />
-                        Fingerprint pattern captured!
+                        Capture successful!
                     </div>
                 </div>
             )}
@@ -122,23 +67,19 @@ const FingerprintActionCard: FC<FingerprintActionCardProps> = ({
                 <h2 className="text-2xl font-bold text-gray-800 mb-2">
                     {isEntry ? 'Passenger Entry' : 'Passenger Exit'}
                 </h2>
-                <p className="text-gray-500 mb-10 text-sm max-w-[250px] mx-auto">
+                <p className="text-gray-500 mb-6 text-sm max-w-[250px] mx-auto">
                     {isEntry
-                        ? 'Press and hold the fingerprint icon to start the trip'
-                        : 'Press and hold the fingerprint icon to end the trip'
+                        ? 'Click the fingerprint icon to simulate entry'
+                        : 'Click the fingerprint icon to simulate exit'
                     }
                 </p>
 
                 {/* Main Interactive Fingerprint Node */}
-                <div className="flex justify-center mb-8">
+                <div className="flex justify-center mb-6">
                     <div
-                        className={`relative inline-flex items-center justify-center w-40 h-40 transition-transform duration-300 ${(disabled || parentIsScanning) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-105 active:scale-95'
+                        className={`relative inline-flex items-center justify-center w-40 h-40 transition-transform duration-300 ${(disabled || parentIsScanning) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-110 active:scale-90'
                             }`}
-                        onMouseDown={handleHoldStart}
-                        onMouseUp={handleHoldEnd}
-                        onMouseLeave={handleHoldEnd}
-                        onTouchStart={handleHoldStart}
-                        onTouchEnd={handleHoldEnd}
+                        onClick={() => handleOneClickScan()}
                         style={{ WebkitTapHighlightColor: 'transparent' }} // Remove mobile tap highlight
                     >
 
@@ -147,24 +88,23 @@ const FingerprintActionCard: FC<FingerprintActionCardProps> = ({
                             <div className={`absolute inset-0 rounded-full animate-pulse opacity-20 ${isEntry ? 'bg-blue-400' : 'bg-green-400'}`}></div>
                         )}
 
-                        {/* Holding Background Ping Overlay */}
-                        {scanState === 'holding' && (
+                        {/* Success Background Ping */}
+                        {scanState === 'success' && (
                             <div className={`absolute inset-0 rounded-full animate-ping opacity-30 ${isEntry ? 'bg-blue-500' : 'bg-green-500'}`}></div>
                         )}
 
-                        {/* Progress Ring (visible while holding or success) */}
+                        {/* Static Circle Trace */}
                         <svg className="absolute inset-0 w-full h-full transform -rotate-90">
-                            {/* Track */}
                             <circle
                                 cx="80"
                                 cy="80"
                                 r={radius}
                                 stroke="currentColor"
-                                strokeWidth="6"
+                                strokeWidth="4"
                                 fill="transparent"
                                 className="text-gray-100"
                             />
-                            {/* Progress Fill */}
+                            {/* Completion Fill */}
                             <circle
                                 cx="80"
                                 cy="80"
@@ -173,9 +113,9 @@ const FingerprintActionCard: FC<FingerprintActionCardProps> = ({
                                 strokeWidth="6"
                                 fill="transparent"
                                 strokeDasharray={circumference}
-                                strokeDashoffset={strokeDashoffset}
+                                strokeDashoffset={scanState === 'success' ? 0 : circumference}
                                 strokeLinecap="round"
-                                className={`${isEntry ? 'text-blue-500' : 'text-green-500'} transition-[stroke-dashoffset] duration-75`}
+                                className={`${isEntry ? 'text-blue-500' : 'text-green-500'} transition-all duration-500`}
                             />
                         </svg>
 
@@ -190,9 +130,7 @@ const FingerprintActionCard: FC<FingerprintActionCardProps> = ({
                                 <Fingerprint className={`
                                     w-12 h-12 transition-colors duration-300
                                     ${disabled || parentIsScanning ? 'text-gray-400' :
-                                        scanState === 'holding'
-                                            ? (isEntry ? 'text-blue-600 drop-shadow-[0_0_8px_rgba(37,99,235,0.8)]' : 'text-green-600 drop-shadow-[0_0_8px_rgba(22,163,74,0.8)]')
-                                            : (isEntry ? 'text-blue-500' : 'text-green-500')
+                                        (isEntry ? 'text-blue-500' : 'text-green-500')
                                     }
                                  `} />
                             )}
@@ -201,23 +139,15 @@ const FingerprintActionCard: FC<FingerprintActionCardProps> = ({
                 </div>
 
                 {/* Bottom Status Status Text */}
-                <div className="h-12 flex items-center justify-center">
+                <div className="h-10 flex items-center justify-center">
                     {parentIsScanning ? (
                         <div className="flex items-center gap-2 text-gray-600 font-medium">
                             <Loader2 className="w-5 h-5 animate-spin" />
-                            Processing transaction...
-                        </div>
-                    ) : scanState === 'holding' ? (
-                        <div className={`font-medium ${isEntry ? 'text-blue-600' : 'text-green-600'} animate-pulse`}>
-                            Keep holding... ({Math.round(progress)}%)
-                        </div>
-                    ) : scanState === 'success' ? (
-                        <div className="font-medium text-green-600 flex items-center gap-2">
-                            <Bus className="w-5 h-5 animate-bounce" /> Processing completion...
+                            Processing...
                         </div>
                     ) : (
                         <div className="text-gray-400 text-sm font-medium">
-                            Scanner Ready
+                            {scanState === 'success' ? 'Captured!' : 'Ready to Scan'}
                         </div>
                     )}
                 </div>

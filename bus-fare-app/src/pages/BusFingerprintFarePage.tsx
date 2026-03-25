@@ -85,10 +85,7 @@ const BusFingerprintFarePage: FC = () => {
     const [toastMessage, setToastMessage] = useState('');
 
     // Demo State
-    const isAnonymousRef = useRef(false);
-    const [isExitMode, setIsExitMode] = useState(false);
-    const fingerprintKeyRef = useRef<string | null>(null); // holds '9','6','3' for named user scan
-    const handleScanRef = useRef<() => void>(() => {}); // always points to latest handleFingerprintScan
+    const handleScanRef = useRef<(key?: string) => void>(() => {}); // always points to latest handleFingerprintScan
 
     // ==========================================
     // INITIALIZATION
@@ -110,21 +107,11 @@ const BusFingerprintFarePage: FC = () => {
 
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Enter') {
-                isAnonymousRef.current = true;
+                handleScanRef.current('Enter');
             } else if (e.key === '+' || e.key === '=') {
-                setIsExitMode(true);
-            } else if (e.key === '9') {
-                // Srinithi63694 95325 → FP_TEST_001
-                fingerprintKeyRef.current = '9';
-                handleScanRef.current();
-            } else if (e.key === '6') {
-                // Varshini 99410 83933 → FP_TEST_002
-                fingerprintKeyRef.current = '6';
-                handleScanRef.current();
-            } else if (e.key === '3') {
-                // Harini → FP_TEST_003
-                fingerprintKeyRef.current = '3';
-                handleScanRef.current();
+                handleScanRef.current('+');
+            } else if (e.key === '9' || e.key === '6' || e.key === '3') {
+                handleScanRef.current(e.key);
             }
         };
         window.addEventListener('keydown', handleKeyDown);
@@ -240,42 +227,42 @@ const BusFingerprintFarePage: FC = () => {
     // UNIVERSAL SCAN HANDLER
     // ==========================================
 
-    const handleFingerprintScan = async () => {
+    const handleFingerprintScan = async (shortcutKey?: string) => {
         setIsScanning(true);
         setError(null);
         setStatusMessage('Scanning fingerprint...');
 
         try {
-            // Demo Fingerprint Rotation 
-            let fpToScan = 'FP_TEST_001';
+            // Determine which fingerprint to scan
+            let fpToScan = 'FP_RANDOM';
 
-            if (isExitMode) {
-                // Find oldest active session to exit
+            // 1. Check if we are in EXIT mode (shortcut '+')
+            if (shortcutKey === '+') {
                 const sessionsObj = getAllTripSessions();
                 const ongoing = Object.values(sessionsObj).filter(s => s.status === 'ONGOING');
                 ongoing.sort((a, b) => new Date(a.entryTime).getTime() - new Date(b.entryTime).getTime());
                 
                 if (ongoing.length === 0) {
-                    setIsExitMode(false);
                     throw new Error('No active trips to end');
                 }
 
                 fpToScan = ongoing[0].fingerprintId;
-                setIsExitMode(false);
-            } else if (fingerprintKeyRef.current) {
-                // Named key shortcut: 9 = Srinithi, 6 = Varshini, 3 = Harini
+            } 
+            // 2. Check for named shortcut key (9, 6, 3)
+            else if (shortcutKey === '9' || shortcutKey === '6' || shortcutKey === '3') {
                 const keyMap: Record<string, string> = {
                     '9': 'FP_TEST_001',
                     '6': 'FP_TEST_002',
                     '3': 'FP_TEST_003'
                 };
-                fpToScan = keyMap[fingerprintKeyRef.current] || 'FP_TEST_001';
-                fingerprintKeyRef.current = null;
-            } else if (isAnonymousRef.current) {
+                fpToScan = keyMap[shortcutKey] || 'FP_TEST_001';
+            } 
+            // 3. Check for anonymous scan (Enter)
+            else if (shortcutKey === 'Enter') {
                 fpToScan = 'FP_ANONYMOUS';
-                isAnonymousRef.current = false; 
-            } else {
-                // Generic scan -> Random user from DB
+            } 
+            // 4. Default to random scan
+            else {
                 fpToScan = 'FP_RANDOM';
             }
 
